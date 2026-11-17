@@ -1,0 +1,39 @@
+{
+  "id": "LeadErrors000001",
+  "name": "Lead intake · error log",
+  "active": false,
+  "nodes": [
+    {
+      "id": "e1000000-0000-4000-8000-000000000001",
+      "name": "On workflow error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "e1000000-0000-4000-8000-000000000002",
+      "name": "Record error",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [260, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO workflow_errors (workflow, execution_id, node, message, details) VALUES ($1, $2, $3, $4, $5::jsonb) RETURNING id",
+        "options": {
+          "queryReplacement": "={{ [ $json.workflow?.name ?? null, String($json.execution?.id ?? ''), $json.execution?.lastNodeExecuted ?? null, $json.execution?.error?.message ?? 'unknown error', JSON.stringify($json.execution?.error ?? {}) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": { "id": "LeadflowPgCred01", "name": "leadflow-postgres" }
+      }
+    }
+  ],
+  "connections": {
+    "On workflow error": {
+      "main": [[{ "node": "Record error", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

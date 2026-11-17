@@ -1,0 +1,64 @@
+[
+  {
+    "name": "urgent sales inquiry with budget",
+    "payload": {
+      "name": "Maya Chen",
+      "email": "maya@brightcart.example",
+      "company": "BrightCart",
+      "message": "Hi! We need to migrate our Shopify store to a headless setup before Black Friday. Budget is around $12k. Could you send a proposal this week?",
+      "source": "website"
+    },
+    "expect": { "status": 200, "category": "sales_inquiry", "urgency": "high", "budget_usd": 12000, "route": "alert", "language": "en" }
+  },
+  {
+    "name": "existing customer with a billing problem",
+    "payload": {
+      "name": "Tom Varga",
+      "email": "tom@varga-consulting.example",
+      "message": "Our October invoice shows the wrong VAT number. Can you send a corrected one?"
+    },
+    "expect": { "status": 200, "category": "support", "urgency": "medium", "route": "reply" }
+  },
+  {
+    "name": "SEO spam",
+    "payload": {
+      "name": "Growth Team",
+      "email": "offers@seo-boost.example",
+      "message": "We offer premium SEO services and guaranteed backlinks to rank your website #1 on Google."
+    },
+    "expect": { "status": 200, "category": "spam", "route": "archive" }
+  },
+  {
+    "name": "job application",
+    "payload": {
+      "name": "Lena Hoffmann",
+      "email": "lena.h@mail.example",
+      "message": "Hello, I'm a junior UI designer. I'm attaching my CV in case you have an open position."
+    },
+    "expect": { "status": 200, "category": "job_application", "route": "reply" }
+  },
+  {
+    "name": "partnership request",
+    "payload": {
+      "name": "Jonas Weber",
+      "email": "jonas@pixelwerk.example",
+      "company": "Pixelwerk Agency",
+      "message": "We're a design agency in Berlin and would like to discuss a white-label partnership for development work."
+    },
+    "expect": { "status": 200, "category": "partnership", "route": "reply" }
+  },
+  {
+    "name": "Russian sales inquiry under the alert threshold",
+    "payload": {
+      "name": "Анна",
+      "email": "anna@school.example",
+      "message": "Здравствуйте! Нужен лендинг для онлайн-школы, бюджет 2000 долларов, сроки — месяц."
+    },
+    "expect": { "status": 200, "category": "sales_inquiry", "urgency": "medium", "budget_usd": 2000, "route": "reply", "language": "ru" }
+  },
+  {
+    "name": "invalid payload",
+    "payload": { "name": "", "email": "not-an-email", "message": "" },
+    "expect": { "status": 422 }
+  }
+]

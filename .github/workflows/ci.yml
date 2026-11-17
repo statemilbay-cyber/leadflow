@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Code node unit tests
+        run: node --test n8n/code
+      - name: Workflow export is up to date
+        run: python3 scripts/build_workflow.py --check
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure a throwaway environment
+        run: |
+          printf 'POSTGRES_PASSWORD=%s\nN8N_ENCRYPTION_KEY=%s\nLEADFLOW_MODE=mock\n' \
+            "$(openssl rand -hex 16)" "$(openssl rand -hex 24)" > .env
+      - run: docker compose up -d --wait
+      - name: Smoke test against the running stack
+        run: python3 scripts/smoke_test.py --db
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs

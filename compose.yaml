@@ -1,0 +1,71 @@
+name: leadflow
+
+x-n8n-env: &n8n-env
+  DB_TYPE: postgresdb
+  DB_POSTGRESDB_HOST: postgres
+  DB_POSTGRESDB_DATABASE: n8n
+  DB_POSTGRESDB_USER: ${POSTGRES_USER:-leadflow}
+  DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+  N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}
+  # Non-secret workflow settings, read by the nodes through $env.
+  N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+  LEADFLOW_MODE: ${LEADFLOW_MODE:-mock}
+  LEADFLOW_MODEL: ${LEADFLOW_MODEL:-claude-opus-5-5}
+  LEADFLOW_COMPANY: ${LEADFLOW_COMPANY:-Northwind Studio}
+  LEADFLOW_HIGH_VALUE_USD: ${LEADFLOW_HIGH_VALUE_USD:-5000}
+  TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+  TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+  GENERIC_TIMEZONE: ${TIMEZONE:-UTC}
+  N8N_DIAGNOSTICS_ENABLED: "false"
+  N8N_PERSONALIZATION_ENABLED: "false"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-leadflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: leadflow
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d leadflow"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  n8n-bootstrap:
+    image: n8nio/n8n:2.48.4
+    entrypoint: ["/bin/sh", "/bootstrap/bootstrap.sh"]
+    # Secrets for the credentials go to this one-shot container only: it stores them in
+    # n8n's encrypted credential store, so the long-running n8n never sees them as env vars.
+    environment:
+      <<: *n8n-env
+      POSTGRES_USER: ${POSTGRES_USER:-leadflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - ./n8n:/bootstrap:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  n8n:
+    image: n8nio/n8n:2.48.4
+    environment: *n8n-env
+    ports:
+      - "127.0.0.1:5678:5678"
+    depends_on:
+      n8n-bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5678/healthz >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+volumes:
+  pgdata:
