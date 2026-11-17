@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: 22
       - name: Code node unit tests
-        run: node --test n8n/code
+        run: node --test n8n/code/*.test.mjs
       - name: Workflow export is up to date
         run: python3 scripts/build_workflow.py --check
 

@@ -51,12 +51,29 @@ def count_rows(table: str) -> int:
     return int(out.strip())
 
 
+def wait_for_webhook(url: str, timeout: float) -> None:
+    """n8n reports healthy before it has registered the webhooks of published workflows.
+
+    Probe with an empty payload: a live webhook rejects it with 422 and writes nothing.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        status, _ = post(url, {})
+        if status != 404:
+            return
+        if time.monotonic() > deadline:
+            raise SystemExit(f"{url} still returns 404 after {timeout:.0f}s: is the workflow published?")
+        time.sleep(1)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--url", default="http://127.0.0.1:5678/webhook/lead")
     parser.add_argument("--db", action="store_true", help="also check rows in Postgres")
+    parser.add_argument("--wait", type=float, default=90, help="seconds to wait for the webhook")
     args = parser.parse_args()
 
+    wait_for_webhook(args.url, args.wait)
     samples = json.loads((ROOT / "samples" / "leads.json").read_text(encoding="utf-8"))
     before = count_rows("leads") if args.db else 0
     failures = 0

@@ -132,7 +132,7 @@ unit-tested. `scripts/build_workflow.py` inlines it into `n8n/workflows/lead-int
 the file n8n imports.
 
 ```bash
-node --test n8n/code                       # unit tests for every Code node
+node --test n8n/code/*.test.mjs            # unit tests for every Code node
 python3 scripts/build_workflow.py          # regenerate the workflow after an edit
 python3 scripts/build_workflow.py --check  # CI: fail if the export is stale
 docker compose up -d --wait --force-recreate n8n-bootstrap n8n
